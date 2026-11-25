@@ -349,6 +349,15 @@ def ask_chatgpt(prompt, model):
 
 
 # ---------------- UI ----------------
+def secret_or_input(env_name, label, password=False):
+    """Use the stored secret silently; only show a field if none is stored."""
+    stored = os.getenv(env_name, "")
+    if stored:
+        return stored
+    return st.text_input(label, type="password" if password else "default")
+
+
+
 st.set_page_config(page_title="Research Gap Finder", page_icon="🔬", layout="wide")
 st.title("🔬 Research Gap Finder")
 st.caption("Prototype. Suggested gaps are starting points – always verify them with your own search and your supervisor.")
@@ -392,13 +401,15 @@ with st.sidebar:
                         st.error(str(e))
 
     elif provider == PROVIDERS[1]:
-        claude_key = st.text_input("Claude API key", value=os.getenv("ANTHROPIC_API_KEY", ""), type="password")
-        st.caption("Create one at console.anthropic.com (paid per use).")
+        claude_key = secret_or_input("ANTHROPIC_API_KEY", "Claude API key", password=True)
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            st.caption("Create one at console.anthropic.com (paid per use).")
         model = st.text_input("Claude model", value=DEFAULT_CLAUDE_MODEL)
 
     elif provider == PROVIDERS[2]:
-        gemini_key = st.text_input("Gemini API key", value=os.getenv("GEMINI_API_KEY", ""), type="password")
-        st.caption("Create one for free at aistudio.google.com.")
+        gemini_key = secret_or_input("GEMINI_API_KEY", "Gemini API key", password=True)
+        if not os.getenv("GEMINI_API_KEY"):
+            st.caption("Create one for free at aistudio.google.com.")
         model = st.text_input("Gemini model", value=os.getenv("GEMINI_MODEL", DEFAULT_MODEL))
 
     else:
@@ -406,13 +417,11 @@ with st.sidebar:
         model = st.text_input("Ollama model", value=DEFAULT_OLLAMA_MODEL)
 
     st.header("Settings")
-    email = st.text_input("Your email (required by NCBI for medicine)", value=os.getenv("NCBI_EMAIL", ""))
-    openalex_key = st.text_input(
-        "OpenAlex API key (required for non-medical fields)",
-        value=os.getenv("OPENALEX_API_KEY", ""),
-        type="password",
+    email = secret_or_input("NCBI_EMAIL", "Your email (required by NCBI for medicine)")
+    openalex_key = secret_or_input(
+        "OPENALEX_API_KEY", "OpenAlex API key (required for non-medical fields)", password=True
     )
-    ncbi_key = st.text_input("NCBI API key (optional)", value=os.getenv("NCBI_API_KEY", ""), type="password")
+    ncbi_key = secret_or_input("NCBI_API_KEY", "NCBI API key (optional)", password=True)
     max_results = st.slider("Number of publications to analyze", 10, 100, 40, step=10)
 
 field = st.selectbox("Field", list(FIELDS.keys()))

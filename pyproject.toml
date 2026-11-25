@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doktorarbeit-gap-finder"
+version = "0.1.0"
+description = "MCP addon: finds literature and suggests doctoral thesis knowledge gaps."
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["mcp>=2", "requests"]
+
+[project.scripts]
+gap-finder-mcp = "server:main"
+
+[tool.setuptools]
+py-modules = ["server"]

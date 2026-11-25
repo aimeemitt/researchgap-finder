@@ -7,7 +7,7 @@ from mcp.server.mcpserver import MCPServer
 
 EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
 OPENALEX = "https://api.openalex.org/works"
-TOOL_NAME = "doktorarbeit-gap-finder"
+TOOL_NAME = "research-gap-finder"
 
 FIELDS = {
     "Medicine": ("medical student", "doctoral thesis (Doktorarbeit)", "PubMed"),
@@ -20,7 +20,7 @@ FIELDS = {
     "Social sciences / Humanities": ("humanities student", "doctoral thesis (Dissertation)", "OpenAlex"),
 }
 
-mcp = MCPServer("Doktorarbeit Gap Finder")
+mcp = MCPServer("Research Gap Finder")
 
 
 # ---------------- PubMed ----------------

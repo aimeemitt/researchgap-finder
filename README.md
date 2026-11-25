@@ -1,4 +1,4 @@
-# Doktorarbeit Gap Finder (addon for your AI)
+# Research Gap Finder (addon for your AI)
 
 An addon for your AI chat app. It searches real literature (PubMed for medicine and dentistry, OpenAlex for other fields) and helps your AI suggest possible knowledge gaps for a doctoral thesis, backed by real references.
 
@@ -17,9 +17,9 @@ Works in any app that supports MCP addons, for example LM Studio and Claude Desk
    ```json
    {
      "mcpServers": {
-       "gap-finder": {
+       "research-gap-finder": {
          "command": "uvx",
-         "args": ["--from", "git+https://github.com/aimeemitt/research-gap-finder", "gap-finder-mcp"],
+         "args": ["--from", "git+https://github.com/aimeemitt/research-gap-finder", "research-gap-finder"],
          "env": {
            "NCBI_EMAIL": "you@example.com",
            "OPENALEX_API_KEY": ""

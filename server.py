@@ -70,7 +70,8 @@ def find_thesis_gaps(keyword: str, field: str = "Medicine", max_results: int = 1
             keyword, field, max_results, email, os.getenv("NCBI_API_KEY", ""), openalex_key
         )
     except requests.RequestException as e:
-        return f"{source} error: {e}"
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        return f"{source} error" + (f" (HTTP {status})" if status else ": could not connect") + ". Try again later."
     if not articles:
         return f"No {source} results for '{keyword}'. Try a broader keyword."
     return instructions(keyword, articles, total, field, source, must_read)

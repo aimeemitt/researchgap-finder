@@ -349,6 +349,22 @@ def ask_chatgpt(prompt, model):
 
 
 # ---------------- UI ----------------
+# Set PUBLIC_DEPLOY = "true" in Streamlit Cloud secrets.
+PUBLIC_DEPLOY = os.getenv("PUBLIC_DEPLOY", "").lower() == "true"
+
+
+def redact(text):
+    """Remove keys and the email from error messages before showing them."""
+    for name in ("GEMINI_API_KEY", "ANTHROPIC_API_KEY", "OPENALEX_API_KEY", "NCBI_API_KEY", "NCBI_EMAIL"):
+        value = os.getenv(name, "")
+        if value:
+            text = text.replace(value, "***")
+    for value in (gemini_key, claude_key, openalex_key, ncbi_key, email):
+        if value:
+            text = text.replace(value, "***")
+    return text
+
+
 def secret_or_input(env_name, label, password=False):
     """Use the stored secret silently; only show a field if none is stored."""
     stored = os.getenv(env_name, "")
@@ -364,7 +380,13 @@ st.caption("Prototype. Suggested gaps are starting points – always verify them
 
 with st.sidebar:
     st.header("AI provider")
-    provider = st.radio("Choose your AI", PROVIDERS, label_visibility="collapsed")
+    if PUBLIC_DEPLOY:
+        # On the public website: no ChatGPT sign-in (would be shared between visitors) and no local Ollama
+        shown = [PROVIDERS[2], PROVIDERS[1]]
+    else:
+        shown = PROVIDERS
+    provider = st.radio("Choose your AI", shown, label_visibility="collapsed")
+    left_box = st.empty()
 
     gemini_key = claude_key = ""
     model = ""
@@ -430,6 +452,14 @@ term = st.text_input("Keyword or topic", placeholder="e.g. sepsis biomarkers chi
 go = st.button("Analyze", type="primary")
 
 
+def uses_stored_key():
+    if provider == PROVIDERS[2]:
+        return bool(gemini_key) and gemini_key == os.getenv("GEMINI_API_KEY", "")
+    if provider == PROVIDERS[1]:
+        return bool(claude_key) and claude_key == os.getenv("ANTHROPIC_API_KEY", "")
+    return False
+
+
 def ai_missing():
     if provider == PROVIDERS[0] and not _load_chatgpt().get("access_token"):
         return "Click “Continue with ChatGPT” in the sidebar."
@@ -440,6 +470,68 @@ def ai_missing():
     if not model:
         return "Enter a model name in the sidebar."
     return None
+
+
+# ---------------- Daily search limit (only when your stored key is used) ----------------
+DAILY_LIMIT_PER_USER = int(os.getenv("DAILY_LIMIT_PER_USER", "5"))
+DAILY_LIMIT_TOTAL = int(os.getenv("DAILY_LIMIT_TOTAL", "100"))
+
+
+@st.cache_resource
+def usage_store():
+    # Shared by all visitors of this app; resets when the app restarts.
+    return {"lock": threading.Lock(), "day": "", "users": {}, "total": 0, "results": {}}
+
+
+def visitor_id():
+    forwarded = st.context.headers.get("X-Forwarded-For") or ""
+    direct = st.context.ip_address
+    ip = str(forwarded).split(",")[0].strip() or (direct if isinstance(direct, str) else "")
+    if ip:
+        return hashlib.sha256(ip.encode()).hexdigest()
+    if "visitor_id" not in st.session_state:
+        st.session_state.visitor_id = str(uuid.uuid4())
+    return st.session_state.visitor_id
+
+
+def _today(store):
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    if store["day"] != day:
+        store.update(day=day, users={}, total=0, results={})
+
+
+def searches_left():
+    store = usage_store()
+    with store["lock"]:
+        _today(store)
+        user_left = DAILY_LIMIT_PER_USER - store["users"].get(visitor_id(), 0)
+        total_left = DAILY_LIMIT_TOTAL - store["total"]
+    return max(0, min(user_left, total_left))
+
+
+def use_one_search():
+    store = usage_store()
+    with store["lock"]:
+        _today(store)
+        uid = visitor_id()
+        if store["users"].get(uid, 0) >= DAILY_LIMIT_PER_USER or store["total"] >= DAILY_LIMIT_TOTAL:
+            return False
+        store["users"][uid] = store["users"].get(uid, 0) + 1
+        store["total"] += 1
+        return True
+
+
+def cached_result(key):
+    store = usage_store()
+    with store["lock"]:
+        _today(store)
+        return store["results"].get(key)
+
+
+def save_result(key, result):
+    store = usage_store()
+    with store["lock"]:
+        store["results"][key] = result
 
 
 def ask_ai(prompt):
@@ -472,8 +564,20 @@ if go:
                 st.stop()
             st.info(f"{source} hits in total: {total} · analyzing {len(articles)} publications")
 
-            with st.spinner("AI is analyzing the literature..."):
-                result = ask_ai(build_prompt(term, articles, field))
+            prompt = build_prompt(term, articles, field)
+            cache_key = hashlib.sha256(f"{provider}|{model}|{prompt}".encode()).hexdigest()
+            result = cached_result(cache_key)
+            if result is None:
+                if uses_stored_key() and not use_one_search():
+                    left_box.caption(f"Searches left today: 0 of {DAILY_LIMIT_PER_USER}")
+                    st.error(
+                        f"Daily limit reached ({DAILY_LIMIT_PER_USER} searches per person per day). "
+                        "Please come back tomorrow."
+                    )
+                    st.stop()
+                with st.spinner("AI is analyzing the literature..."):
+                    result = ask_ai(prompt)
+                save_result(cache_key, result)
 
             st.markdown(result)
 
@@ -487,6 +591,9 @@ if go:
                     st.markdown(f"[{a['id']}]({a['url']}) · {', '.join(a['types'])}")
                     st.write(a["abstract"] or "No abstract available.")
         except requests.HTTPError as e:
-            st.error(f"{source} error: {e}")
+            st.error(redact(f"{source} error: {e}"))
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(redact(f"Error: {e}"))
+
+if uses_stored_key():
+    left_box.caption(f"Searches left today: {searches_left()} of {DAILY_LIMIT_PER_USER}")

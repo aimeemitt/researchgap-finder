@@ -1,0 +1,13 @@
+# Render blueprint for the online addon (used by ChatGPT, Claude, ...).
+services:
+  - type: web
+    name: researchgap-finder
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: researchgap-finder-online
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true

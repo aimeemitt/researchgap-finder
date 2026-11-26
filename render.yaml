@@ -11,3 +11,11 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      # Shown on the privacy and support pages. Set them in Render → Environment.
+      - key: DEVELOPER_NAME
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      # Token from the OpenAI plugin portal (domain verification). Set it in Render → Environment.
+      - key: OPENAI_APPS_CHALLENGE
+        sync: false

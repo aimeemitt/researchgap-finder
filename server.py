@@ -58,7 +58,7 @@ def instructions(term, articles, total, field, source, must_read):
 Write your answer in Markdown in EXACTLY this layout. Do not add anything before or after it.
 
 # 🔬 Research Gap Finder
-*Prototype. Suggested gaps are starting points – always verify them with your own search and your supervisor.*
+*Suggested gaps are starting points – always verify them with your own search and your supervisor.*
 
 > {source} hits in total: {total} · analyzing {len(articles)} publications
 
@@ -345,28 +345,118 @@ Free at <a href="https://openalex.org" target="_blank" rel="noopener">openalex.o
 <button type="submit">Connect</button>
 </form>
 <p><small>Your email and key are not stored on this server. They are encrypted inside your AI app's connection.
-To change them, disconnect {e(NAME)} in your AI app and connect again.</small></p>
+To change them, disconnect {e(NAME)} in your AI app and connect again.
+<a href="/privacy" target="_blank">Privacy policy</a> · <a href="/terms" target="_blank">Terms of use</a></small></p>
+</body></html>"""
+
+
+REPO_URL = "https://github.com/aimeemitt/researchgap-finder"
+PAGE_STYLE = """body{font-family:-apple-system,system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;color:#222;line-height:1.5}
+code{background:#f4f4f4;padding:4px 8px;border-radius:4px;word-break:break-all} h2{font-size:1.15em;margin-top:28px}
+footer{margin-top:40px;font-size:.9em;color:#555}"""
+
+
+def contact():
+    """Developer name and support email, set on Render (DEVELOPER_NAME, SUPPORT_EMAIL)."""
+    return os.getenv("DEVELOPER_NAME", "The developer of Research Gap Finder"), os.getenv("SUPPORT_EMAIL", "")
+
+
+def page(title, body):
+    e = html.escape
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{e(title)}</title><style>{PAGE_STYLE}</style></head><body>
+{body}
+<footer><a href="/">Home</a> · <a href="/privacy">Privacy policy</a> · <a href="/terms">Terms of use</a> · <a href="/support">Support</a></footer>
 </body></html>"""
 
 
 def home_page(mcp_url):
     e = html.escape
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{e(NAME)} addon</title>
-<style>body{{font-family:-apple-system,system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#222}}
-code{{background:#f4f4f4;padding:4px 8px;border-radius:4px;word-break:break-all}}</style></head><body>
-<h1>🔬 {e(NAME)} – addon for your AI</h1>
+    return page(f"{NAME} addon", f"""<h1>🔬 {e(NAME)} – addon for your AI</h1>
+<p>Helps students find a doctoral thesis topic. It searches real literature (PubMed for medicine and dentistry,
+OpenAlex for other fields), and your AI suggests possible knowledge gaps backed by real references,
+plus a reading list of the most cited papers.</p>
 <p>Add this address to your AI app (ChatGPT, Claude, …):</p>
 <p><code>{e(mcp_url)}</code></p>
-<p>Step-by-step instructions: <a href="https://github.com/aimeemitt/researchgap-finder#readme">github.com/aimeemitt/researchgap-finder</a></p>
-</body></html>"""
+<p>Step-by-step instructions: <a href="{REPO_URL}#readme">{e(REPO_URL.removeprefix("https://"))}</a></p>""")
+
+
+def privacy_page():
+    e = html.escape
+    name, email = contact()
+    reach = f'<a href="mailto:{e(email)}">{e(email)}</a>' if email else f'<a href="{REPO_URL}/issues">GitHub</a>'
+    return page(f"Privacy policy – {NAME}", f"""<h1>Privacy policy</h1>
+<p>Last updated: 26 November 2026</p>
+<h2>Who is responsible</h2>
+<p>{e(name)}. Contact: {reach}.</p>
+<h2>What data is processed, and why</h2>
+<ul>
+<li><b>Your email address</b> (entered once on the sign-in page). Sent to PubMed (US National Library of Medicine),
+which requires an email address for every search.</li>
+<li><b>Your OpenAlex API key</b> (optional, entered once on the sign-in page). Sent to OpenAlex to search
+non-medical literature.</li>
+<li><b>Your search terms and field</b> (sent by your AI app when you ask for a search). Sent to PubMed, NIH iCite
+(citation counts) or OpenAlex to find publications.</li>
+<li><b>Technical data</b> (IP address, time, requested page) in the hosting provider's server logs, needed to run
+and protect the service.</li>
+</ul>
+<p>Nothing else is collected. No account, no payment data, no chat history, no tracking, no advertising.</p>
+<h2>Where it is stored</h2>
+<p>Your email and key are <b>not stored on this server</b>. They are encrypted and kept only inside the
+connection your AI app holds (the login token). Search terms and results are not stored by this service.</p>
+<h2>Who receives data</h2>
+<ul>
+<li>PubMed / NCBI and NIH iCite (U.S. National Institutes of Health): search terms and your email.</li>
+<li>OpenAlex (OurResearch): search terms and your OpenAlex key.</li>
+<li>Render (hosting, USA): technical server logs.</li>
+<li>Your AI app (e.g. ChatGPT, Claude) receives the search results; its own privacy policy applies.</li>
+</ul>
+<p>Some of these recipients are in the USA, so data may be processed outside the EU.</p>
+<h2>How long</h2>
+<p>Your login expires after 180 days at the latest; you can end it any time by removing the addon in your AI app.
+Server logs are kept by the hosting provider for a limited time according to its own policy.</p>
+<h2>Your rights</h2>
+<p>You can ask for information, correction or deletion of your data and object to its processing, and you can
+complain to a data protection authority. Because this service stores no personal data itself, removing the
+addon in your AI app ends all processing by this service.</p>""")
+
+
+def terms_page():
+    e = html.escape
+    return page(f"Terms of use – {NAME}", f"""<h1>Terms of use</h1>
+<p>Last updated: 26 November 2026</p>
+<ul>
+<li>{e(NAME)} is free to use. It helps you find literature and possible research gaps.</li>
+<li>Suggested gaps are starting points, not facts. Always check them with your own literature search and your
+supervisor. The service gives no medical, legal or professional advice.</li>
+<li>Results depend on PubMed, NIH iCite and OpenAlex and on your AI app. They can be incomplete or wrong.</li>
+<li>The service is provided "as is", without any warranty, and may change or stop at any time.</li>
+<li>Use it lawfully and do not overload or misuse it. You must follow the terms of PubMed, OpenAlex and your AI app.</li>
+<li>The source code is open source under the MIT license: <a href="{REPO_URL}">{e(REPO_URL.removeprefix("https://"))}</a>.</li>
+</ul>""")
+
+
+def support_page():
+    e = html.escape
+    name, email = contact()
+    mail = f'<li>Email: <a href="mailto:{e(email)}">{e(email)}</a></li>' if email else ""
+    return page(f"Support – {NAME}", f"""<h1>Support</h1>
+<p>Questions, problems or ideas? Get in touch:</p>
+<ul>{mail}<li>GitHub: <a href="{REPO_URL}/issues">report a problem</a></li></ul>
+<h2>Common problems</h2>
+<ul>
+<li><b>The first search fails or is slow:</b> the service sleeps when unused and needs about a minute to wake up. Ask again.</li>
+<li><b>"This field needs an OpenAlex API key":</b> get a free key at openalex.org, remove the addon in your AI app,
+add it again and enter the key.</li>
+<li><b>Change your email or key:</b> remove the addon in your AI app and add it again.</li>
+</ul>""")
 
 
 def main_online():
     import uvicorn
     from starlette.requests import Request
-    from starlette.responses import HTMLResponse, RedirectResponse
+    from starlette.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 
     secret = os.getenv("SECRET_KEY", "")
     if len(secret) < 32:
@@ -391,6 +481,24 @@ def main_online():
     @server.custom_route("/", methods=["GET"])
     async def home(request: Request):
         return HTMLResponse(home_page(mcp_url))
+
+    @server.custom_route("/privacy", methods=["GET"])
+    async def privacy(request: Request):
+        return HTMLResponse(privacy_page())
+
+    @server.custom_route("/terms", methods=["GET"])
+    async def terms(request: Request):
+        return HTMLResponse(terms_page())
+
+    @server.custom_route("/support", methods=["GET"])
+    async def support(request: Request):
+        return HTMLResponse(support_page())
+
+    @server.custom_route("/.well-known/openai-apps-challenge", methods=["GET"])
+    async def openai_challenge(request: Request):
+        # Domain check for the ChatGPT app directory: paste the token from OpenAI into OPENAI_APPS_CHALLENGE on Render.
+        token = os.getenv("OPENAI_APPS_CHALLENGE", "").strip()
+        return PlainTextResponse(token, status_code=200 if token else 404)
 
     @server.custom_route("/signin", methods=["GET", "POST"])
     async def signin(request: Request):

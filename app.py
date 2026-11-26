@@ -15,10 +15,12 @@ import jwt
 import requests
 import streamlit as st
 from google import genai
+from google.genai import errors as genai_errors
 
 from core import FIELDS, build_prompt, get_literature, must_read_markdown
 
 DEFAULT_MODEL = "gemini-3.8-flash"
+FALLBACK_MODEL = "gemini-3.6-flash"
 DEFAULT_CLAUDE_MODEL = "claude-sonnet-5-5"
 DEFAULT_OLLAMA_URL = "http://localhost:11434/v1"
 DEFAULT_OLLAMA_MODEL = "llama3.1"
@@ -34,8 +36,20 @@ PROVIDERS = [
 # ---------------- AI: Gemini ----------------
 def ask_gemini(prompt, api_key, model):
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(model=model, contents=prompt)
-    return response.text
+    models = [model] if model == FALLBACK_MODEL else [model, FALLBACK_MODEL]
+    last_error = None
+    for m in models:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(model=m, contents=prompt)
+                return response.text
+            except genai_errors.APIError as e:
+                if e.code not in (500, 503):
+                    raise
+                last_error = e
+                if attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+    raise last_error
 
 
 # ---------------- AI: Claude ----------------

@@ -17,9 +17,9 @@ Works in any app that supports MCP addons, for example LM Studio and Claude Desk
    ```json
    {
      "mcpServers": {
-       "research-gap-finder": {
+       "researchgap-finder": {
          "command": "uvx",
-         "args": ["--from", "git+https://github.com/aimeemitt/research-gap-finder", "research-gap-finder"],
+         "args": ["--from", "git+https://github.com/aimeemitt/research-gap-finder", "researchgap-finder"],
          "env": {
            "NCBI_EMAIL": "you@example.com",
            "OPENALEX_API_KEY": ""

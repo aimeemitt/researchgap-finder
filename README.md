@@ -17,9 +17,10 @@ https://researchgap-finder.onrender.com/mcp
 
 Works on the free Claude plan.
 
-1. Open [claude.ai](https://claude.ai) → **Customize** → **Connectors**.
+1. In the Claude app, click **Plugins** in the left sidebar.
+   On the website: open [claude.ai/customize/connectors](https://claude.ai/customize/connectors).
 2. Click **Add** → **Add custom connector**.
-3. Name: `Research Gap Finder`. URL: the addon address above. Click **Add**.
+3. Name: `Research Gap Finder`. URL: the addon address above. Leave the other settings as they are. Click **Add**.
 4. Click **Connect**. A page opens: enter your email (and your OpenAlex key if you have one). Click **Connect**.
 
 ## Add it to ChatGPT
